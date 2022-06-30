@@ -1,59 +1,9 @@
-version: "3"
+version: '3.3'
 services:
-  localstack:
-    image: localstack/localstack
+  jaeger-allinone:
+    image: jaegertracing/all-in-one:latest
     ports:
-      - '4566:4566'
-    environment:
-      - DEFAULT_REGION=sa-east-1
-      - SERVICES=sqs
-      - DATA_DIR=/tmp/localstack/data
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-  aws_cli:
-    image: amazon/aws-cli
-    depends_on: 
-      - localstack
-    entrypoint: /bin/sh -c
-    command: >  
-     '
-     RED="\033[0;31m"
-     GREEN="\033[0;32m"
-     ACCESS_KEY="default"
-     SECRET_KEY="default"
-     REGION="sa-east-1"
-     COUNTER=15;
-     SQS_DESIRED_STATE="sqs available";
-     TABLE_DESIRED_STATE="ACTIVE";
-     SERVICE_ACTUAL_STATE=0;
-     
-      while [ $$COUNTER -ne 0 ] && [ $$SERVICE_ACTUAL_STATE != 1 ]
-      
-      do 
-      RESPONSE=$$(curl -sb --connect-timeout 2 /dev/null "localstack:4566/health?redirect" | tr -cd [^[:alnum:][:space:]]+) 
-      echo " Response from Localstack $$RESPONSE";
-
-      if [[ $$RESPONSE == *"SQS_DESIRED_STATE"* ]]; then SERVICE_ACTUAL_STATE=1; else SERVICE_ACTUAL_STATE=0; fi;
-     
-      COUNTER=$$((COUNTER-1)); 
-      echo "Service is not ready yet! $$COUNTER retries left."; 
-      sleep 3; 
-      done; 
-      echo backend is up;
-
-      echo "########### Creating profile ###########"
-
-      aws configure set aws_access_key_id $$ACCESS_KEY --profile=localstack
-      aws configure set aws_secret_access_key $$SECRET_KEY --profile=localstack      
-      aws configure set region $$REGION --profile=localstack
-
-      echo "########### Listing profile ###########"
-      aws configure list --profile=localstack
-
-      echo "########### Creating SQS ###########"
-      
-      aws sqs --profile localstack --endpoint-url=http://localstack:4566 create-queue --queue-name sample-queue
-      
-      echo -e "$${GREEN}########### [Success] SQS created ###########"
-      
-      '
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 16686:16686
+      - 14268:14268
